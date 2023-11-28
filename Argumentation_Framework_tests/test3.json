@@ -1,0 +1,21 @@
+{
+    "Arguments" : {
+        "0": "We should go to the park.",
+        "1": "We should stay at home and study.",
+        "2": "Studying at home is more productive than going to the park.",
+        "3": "The park has a peaceful environment which is good for studying.",
+        "4": "We have a lot of house chores to do.",
+        "5": "We can do house chores any time.",
+        "6": "It might rain today.",
+        "7": "We have umbrellas.",
+        "8": "We should go to the museum."
+    },
+    
+    "Attack Relations" : [
+        ["0","1"], ["1","0"], ["2","0"], 
+        ["3","2"], ["4","0"], ["4","1"],
+        ["5","4"], ["6","0"], ["7","6"],
+        ["8","0"], ["0","8"], ["8","8"]
+    ]
+}
+
