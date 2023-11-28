@@ -1,3 +1,4 @@
+import argparse
 import json
 
 import matplotlib.pyplot as plt
@@ -16,6 +17,7 @@ class Game:
         self.save_graph = save_graph
         self.add_game_text = add_game_text
         self.game_text = ""
+        self.step = 1
 
     def load_data(self):
         with open(self.data_file, 'r') as f:
@@ -23,30 +25,40 @@ class Game:
         return data
 
     def draw_graph(self):
-        if not self.show_graph:
+        if not self.show_graph and not self.save_graph:
             return
 
-        G = nx.DiGraph()
-        G.add_nodes_from(self.data['Arguments'].keys())
-        G.add_edges_from(self.data['Attack Relations'])
-        pos = nx.spring_layout(G, seed=24)  # Graph Layout
+        if self.step == 1:
+            self.G = nx.DiGraph()
+            self.G.add_nodes_from(self.data['Arguments'].keys())
+            self.G.add_edges_from(self.data['Attack Relations'])
+            self.pos = nx.spring_layout(self.G, seed=24)  # Graph Layout
+
         plt.figure(figsize=(16, 10))
-        nx.draw_networkx_nodes(G, pos, nodelist=self.proponent_arguments, node_color='blue')
-        nx.draw_networkx_nodes(G, pos, nodelist=self.opponent_arguments, node_color='red')
-        nx.draw_networkx_edges(G, pos, edge_color='black', arrowstyle='->', arrowsize=20)
-        nx.draw_networkx_labels(G, pos, font_size=12)
+        nx.draw_networkx_nodes(self.G, self.pos, nodelist=self.proponent_arguments, node_color='blue')
+        nx.draw_networkx_nodes(self.G, self.pos, nodelist=self.opponent_arguments, node_color='red')
+        nx.draw_networkx_edges(self.G, self.pos, edge_color='black', arrowstyle='->', arrowsize=20)
+        nx.draw_networkx_labels(self.G, self.pos, font_size=12)
         argument_text = {k: f'{v}' for k, v in self.data['Arguments'].items()}
-        pos_higher = {k: (v[0], v[1]+0.04) for k, v in pos.items()}
-        nx.draw_networkx_labels(G, pos_higher, labels=argument_text, horizontalalignment='center', font_size=8)
-        
+        pos_higher = {k: (v[0], v[1]+0.04) for k, v in self.pos.items()}
+        nx.draw_networkx_labels(self.G, pos_higher, labels=argument_text, horizontalalignment='center', font_size=8)
+
         # Add game text to the graph
         if self.add_game_text:
-            plt.text(0.5, 0.02, self.game_text, ha='center', va='center', transform=plt.gcf().transFigure)
-        
-        if self.save_graph:
-            plt.savefig('game_output.png')
+            plt.text(0.5, 0.05, self.game_text, ha='center', va='center', transform=plt.gcf().transFigure)
 
-        plt.show(block=False)
+        # Adjust the margins
+        plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
+
+        if self.save_graph:
+            plt.savefig(f'game_output_{self.step}.png')
+
+        if self.show_graph:
+            plt.show(block=False)
+        else:
+            plt.close()
+
+        self.step += 1
 
     def proponent_turn(self):
         if not self.proponent_arguments:
@@ -63,7 +75,6 @@ class Game:
 
         self.proponent_arguments.append(argument)
         print(f"Proponent's argument: {self.data['Arguments'][argument]}")
-        self.draw_graph()
         if self.verbose:
             print("Game state:", self.__dict__)
         return True
@@ -92,7 +103,6 @@ class Game:
 
         self.opponent_arguments.append(argument)
         print(f"Opponent's argument: {self.data['Arguments'][argument]}")
-        # self.draw_graph()
         if self.verbose:
             print("Game state:", self.__dict__)
         return True
@@ -102,14 +112,27 @@ class Game:
             print("Proponent's turn...")
             if not self.proponent_turn():
                 break
-            self.game_text += f"Proponent's turn...\nProponent's argument: {self.data['Arguments'][self.proponent_arguments[-1]]}\n"
+            self.game_text += f"Proponent: {self.data['Arguments'][self.proponent_arguments[-1]]}\n"
+            self.draw_graph()  # Draw the graph after updating game text
+
             print("Opponent's turn...")
             if not self.opponent_turn():
                 break
-            self.game_text += f"Opponent's turn...\nOpponent's argument: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
+            self.game_text += f"Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
+            self.draw_graph()  # Draw the graph after updating game text
         self.draw_graph()  # Draw the graph after the game
 
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Play the argumentation game.')
+    parser.add_argument('data_file', type=str, help='The path to the data file.')
+    parser.add_argument('claimed_argument', type=str, help='The claimed argument.')
+    parser.add_argument('--verbose', action='store_true', help='If set, print verbose output.')
+    parser.add_argument('--show_graph', action='store_true', help='If set, show the graph.')
+    parser.add_argument('--save_graph', action='store_true', help='If set, save the graph.')
+    parser.add_argument('--add_game_text', action='store_true', help='If set, add game text to the graph.')
 
-game = Game('./Argumentation_Framework_tests/test3.json', '0', verbose=False, show_graph=True, save_graph=True, add_game_text=True)
-game.play()
+    args = parser.parse_args()
+
+    game = Game(args.data_file, args.claimed_argument, args.verbose, args.show_graph, args.save_graph, args.add_game_text)
+    game.play()
