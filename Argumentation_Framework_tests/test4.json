@@ -1,0 +1,21 @@
+{
+    "Arguments" : {
+        "0": "We should go to the beach.",
+        "1": "We should go to the library.",
+        "2": "We should stay at home and relax.",
+        "3": "The beach has a calming environment which is good for relaxation.",
+        "4": "The library has a quiet environment which is good for studying.",
+        "5": "Staying at home is more comfortable and saves travel time.",
+        "6": "It might be too hot at the beach.",
+        "7": "We have sunscreen and hats.",
+        "8": "The library might be crowded."
+    },
+    
+    "Attack Relations" : [
+        ["0","1"], ["1","0"], ["2","0"], 
+        ["3","1"], ["4","0"], ["5","1"],
+        ["6","0"], ["7","6"], ["8","1"],
+        ["1","2"], ["2","1"], ["0","2"]
+    ]
+}
+
