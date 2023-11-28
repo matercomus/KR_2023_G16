@@ -120,7 +120,6 @@ class Game:
                 break
             self.game_text += f"Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
             self.draw_graph()  # Draw the graph after updating game text
-        self.draw_graph()  # Draw the graph after the game
 
 
 if __name__ == "__main__":
