@@ -1,0 +1,18 @@
+{
+    "Arguments" : {
+        "0": "We should go to the beach.",
+        "1": "We should go to the library.",
+        "2": "The library is better for studying than the beach.",
+        "3": "We have no time for leisure activities, since we have a project deadline.",
+        "4": "The project deadline is in a few days.",
+        "5": "We have no money for beach or library.",
+        "6": "We just received our scholarships."
+    },
+    
+    "Attack Relations" : [
+        ["0","1"], ["1","0"], ["2","0"], 
+        ["3","0"], ["3","1"], ["4","3"],
+        ["5","0"], ["5","1"], ["6","5"]
+    ]
+}
+

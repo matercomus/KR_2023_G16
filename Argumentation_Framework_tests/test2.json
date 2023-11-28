@@ -1,0 +1,20 @@
+{
+    "Arguments" : {
+        "0": "We should go to the park.",
+        "1": "We should stay home and study.",
+        "2": "Studying at home is more efficient than at the park.",
+        "3": "The park is more relaxing than home.",
+        "4": "We have a test next week.",
+        "5": "We need relaxation for better performance.",
+        "6": "We have no money for transport to the park.",
+        "7": "We just got our allowances.",
+        "8": "The weather forecast predicts rain."
+    },
+    
+    "Attack Relations" : [
+        ["0","1"], ["1","0"], ["2","0"], ["3","1"],
+        ["4","0"], ["4","3"], ["5","1"], ["5","4"],
+        ["6","0"], ["7","6"], ["8","0"]
+    ]
+}
+
