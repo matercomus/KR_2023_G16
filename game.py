@@ -32,7 +32,7 @@ class Game:
             self.G = nx.DiGraph()
             self.G.add_nodes_from(self.data['Arguments'].keys())
             self.G.add_edges_from(self.data['Attack Relations'])
-            self.pos = nx.spring_layout(self.G, seed=24)  # Graph Layout
+            self.pos = nx.spring_layout(self.G, seed=10)  # Graph Layout
 
         plt.figure(figsize=(16, 10))
         nx.draw_networkx_nodes(self.G, self.pos, nodelist=self.proponent_arguments, node_color='blue')
@@ -64,9 +64,9 @@ class Game:
         if not self.proponent_arguments:
             argument = self.claimed_argument
         else:
-            # Find an argument that attacks the opponent's last argument and has not been used by the proponent
+            # Find an argument that attacks the opponent's last argument and has not been used by the opponent
             for relation in self.data['Attack Relations']:
-                if relation[1] == self.opponent_arguments[-1] and relation[0] not in self.proponent_arguments:
+                if relation[1] == self.opponent_arguments[-1] and relation[0] not in self.opponent_arguments:
                     argument = relation[0]
                     break
             else:
@@ -80,7 +80,13 @@ class Game:
         return True
 
     def opponent_turn(self):
-        options = [relation[0] for relation in self.data['Attack Relations'] if relation[1] == self.proponent_arguments[-1] and relation[0] not in self.opponent_arguments]
+        options = []
+        for relation in self.data['Attack Relations']:
+            if relation[0] not in self.opponent_arguments:
+                if len(self.proponent_arguments) > 1 and relation[1] in self.proponent_arguments:
+                    options.append(relation[0])
+                elif relation[1] == self.proponent_arguments[-1]:
+                    options.append(relation[0])
 
         if not options:
             print("Opponent has no choices left. Proponent wins!")
@@ -109,13 +115,13 @@ class Game:
 
     def play(self):
         while True:
-            print("Proponent's turn...")
+            print("\nProponent's turn...")
             if not self.proponent_turn():
                 break
             self.game_text += f"Proponent: {self.data['Arguments'][self.proponent_arguments[-1]]}\n"
             self.draw_graph()  # Draw the graph after updating game text
 
-            print("Opponent's turn...")
+            print("\nOpponent's turn...")
             if not self.opponent_turn():
                 break
             self.game_text += f"Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
