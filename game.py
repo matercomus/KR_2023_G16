@@ -6,8 +6,18 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 
+# Define the Game class
 class Game:
-    def __init__(self, data_file, claimed_argument, verbose=False, show_graph=False, save_graph=False, add_game_text=False):
+    # Initialize the game with the given parameters
+    def __init__(
+        self,
+        data_file,
+        claimed_argument,
+        verbose=False,
+        show_graph=False,
+        save_graph=False,
+        add_game_text=False,
+    ):
         self.data_file = data_file
         self.data = self.load_data()
         self.claimed_argument = claimed_argument
@@ -22,37 +32,58 @@ class Game:
 
         # Initialize the graph
         self.G = nx.DiGraph()
-        self.G.add_nodes_from(self.data['Arguments'].keys())
-        self.G.add_edges_from(self.data['Attack Relations'])
-        self.pos = nx.spring_layout(self.G, seed=10)  # Graph Layout
+        self.G.add_nodes_from(self.data["Arguments"].keys())
+        self.G.add_edges_from(self.data["Attack Relations"])
+        self.pos = nx.spring_layout(self.G, seed=10)
 
+    # Load the data from the file
     def load_data(self):
-        with open(self.data_file, 'r') as f:
+        with open(self.data_file, "r") as f:
             data = json.load(f)
         return data
 
+    # Draw the graph
     def draw_graph(self):
         if not self.show_graph and not self.save_graph:
             return
 
         plt.figure(figsize=(16, 10))
-        nx.draw_networkx_nodes(self.G, self.pos, nodelist=self.proponent_arguments, node_color='blue')
-        nx.draw_networkx_nodes(self.G, self.pos, nodelist=self.opponent_arguments, node_color='red')
-        nx.draw_networkx_edges(self.G, self.pos, edge_color='black', arrowstyle='->', arrowsize=20)
+        nx.draw_networkx_nodes(
+            self.G, self.pos, nodelist=self.proponent_arguments, node_color="blue"
+        )
+        nx.draw_networkx_nodes(
+            self.G, self.pos, nodelist=self.opponent_arguments, node_color="red"
+        )
+        nx.draw_networkx_edges(
+            self.G, self.pos, edge_color="black", arrowstyle="->", arrowsize=20
+        )
         nx.draw_networkx_labels(self.G, self.pos, font_size=12)
-        argument_text = {k: f'{v}' for k, v in self.data['Arguments'].items()}
-        pos_higher = {k: (v[0], v[1]+0.04) for k, v in self.pos.items()}
-        nx.draw_networkx_labels(self.G, pos_higher, labels=argument_text, horizontalalignment='center', font_size=8)
+        argument_text = {k: f"{v}" for k, v in self.data["Arguments"].items()}
+        pos_higher = {k: (v[0], v[1] + 0.04) for k, v in self.pos.items()}
+        nx.draw_networkx_labels(
+            self.G,
+            pos_higher,
+            labels=argument_text,
+            horizontalalignment="center",
+            font_size=8,
+        )
 
         # Add game text to the graph
         if self.add_game_text:
-            plt.text(0.5, 0.05, self.game_text, ha='center', va='center', transform=plt.gcf().transFigure)
+            plt.text(
+                0.5,
+                0.05,
+                self.game_text,
+                ha="center",
+                va="center",
+                transform=plt.gcf().transFigure,
+            )
 
         # Adjust the margins
         plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
 
         if self.save_graph:
-            plt.savefig(f'game_output_{self.step}.png')
+            plt.savefig(f"game_output_{self.step}.png")
 
         if self.show_graph:
             plt.show(block=False)
@@ -61,75 +92,129 @@ class Game:
 
         self.step += 1
 
+    # Proponent's turn
     def proponent_turn(self):
         if not self.opponent_arguments:  # Check if opponent_arguments is empty
+            # The proponent's argument is the claimed argument
             argument = self.claimed_argument
         else:
             # Find an argument that attacks the opponent's last argument and has not been used by the proponent
-            options = [node for node in self.G.predecessors(self.opponent_arguments[-1]) if node not in self.proponent_arguments]
+            options = [
+                node
+                for node in self.G.predecessors(self.opponent_arguments[-1])
+                if node not in self.proponent_arguments
+            ]
             if not options:
                 print("Proponent cannot make a move. Opponent wins!")
                 return False
-            argument = random.choice(options)  # choosing randomly
+            # Choose a random argument from the options
+            argument = random.choice(options)
 
+        # Add the argument to the proponent's arguments
         self.proponent_arguments.append(argument)
+        # Print the proponent's argument
         print(f"Proponent's argument: {self.data['Arguments'][argument]}")
         if self.verbose:
+            # Print the game state if verbose is True
             print("Game state:", self.__dict__)
         return True
 
+    # Opponent's turn
     def opponent_turn(self):
-        options = [node for node in self.G.nodes if node not in self.opponent_arguments and self.G.has_edge(node, self.proponent_arguments[-1])]
-
+        # Find an argument that has not been used by the opponent and attacks the proponent's last argument
+        options = [
+            node
+            for node in self.G.nodes
+            if node not in self.opponent_arguments
+            and self.G.has_edge(node, self.proponent_arguments[-1])
+        ]
         if not options:
             print("Opponent has no choices left. Proponent wins!")
             return False
 
         print("Opponent's options:")
         for i, option in enumerate(options):
+            # Print the opponent's options
             print(f"{i+1}. {self.data['Arguments'][option]}")
 
         while True:
             try:
+                # Get the opponent's choice
                 choice = int(input("Enter the number of your choice: ")) - 1
                 if choice < 0 or choice >= len(options):
                     raise ValueError
                 break
             except ValueError:
-                print("Invalid input. Please enter a number corresponding to one of the options.")
+                print(
+                    "Invalid input. Please enter a number corresponding to one of the options."
+                )
 
+        # The opponent's argument is the chosen option
         argument = options[choice]
+        # Add the argument to the opponent's arguments
         self.opponent_arguments.append(argument)
+        # Print the opponent's argument
         print(f"Opponent's argument: {self.data['Arguments'][argument]}")
+
         if self.verbose:
+            # Print the game state if verbose is True
             print("Game state:", self.__dict__)
         return True
 
+    # Play the game
     def play(self):
         while True:
             print("\nProponent's turn...")
-            if not self.proponent_turn():
+            if (
+                not self.proponent_turn()
+            ):  # If the proponent cannot make a move, break the loop
                 break
-            self.game_text += f"Proponent: {self.data['Arguments'][self.proponent_arguments[-1]]}\n"
+            # Add the proponent's argument to the game text
+            self.game_text += (
+                f"Proponent: {self.data['Arguments'][self.proponent_arguments[-1]]}\n"
+            )
             self.draw_graph()  # Draw the graph after updating game text
 
             print("\nOpponent's turn...")
-            if not self.opponent_turn():
+            if (
+                not self.opponent_turn()
+            ):  # If the opponent cannot make a move, break the loop
                 break
-            self.game_text += f"Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
+            # Add the opponent's argument to the game text
+            self.game_text += (
+                f"Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
+            )
             self.draw_graph()  # Draw the graph after updating game text
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Play the argumentation game.')
-    parser.add_argument('data_file', type=str, help='The path to the data file.')
-    parser.add_argument('claimed_argument', type=str, help='The claimed argument.')
-    parser.add_argument('--verbose', action='store_true', help='If set, print verbose output.')
-    parser.add_argument('--show_graph', action='store_true', help='If set, show the graph.')
-    parser.add_argument('--save_graph', action='store_true', help='If set, save the graph.')
-    parser.add_argument('--add_game_text', action='store_true', help='If set, add game text to the graph.')
+    parser = argparse.ArgumentParser(description="Play the argumentation game.")
+    parser.add_argument("data_file", type=str, help="The path to the data file.")
+    parser.add_argument("claimed_argument", type=str, help="The claimed argument.")
+    parser.add_argument(
+        "--verbose", action="store_true", help="If set, print verbose output."
+    )
+    parser.add_argument(
+        "--show_graph", action="store_true", help="If set, show the graph."
+    )
+    parser.add_argument(
+        "--save_graph", action="store_true", help="If set, save the graph."
+    )
+    parser.add_argument(
+        "--add_game_text",
+        action="store_true",
+        help="If set, add game text to the graph.",
+    )
 
-    args = parser.parse_args()
+    args = parser.parse_args()  # Parse the command-line arguments
 
-    game = Game(args.data_file, args.claimed_argument, args.verbose, args.show_graph, args.save_graph, args.add_game_text)
+    # Create a Game object and play the game
+    game = Game(
+        args.data_file,
+        args.claimed_argument,
+        args.verbose,
+        args.show_graph,
+        args.save_graph,
+        args.add_game_text,
+    )
     game.play()
