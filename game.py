@@ -79,10 +79,7 @@ class Game:
         return True
 
     def opponent_turn(self):
-        options = []
-        for node in self.G.nodes:
-            if node not in self.opponent_arguments and self.G.has_edge(node, self.proponent_arguments[-1]):
-                options.append(node)
+        options = [node for node in self.G.nodes if node not in self.opponent_arguments and self.G.has_edge(node, self.proponent_arguments[-1])]
 
         if not options:
             print("Opponent has no choices left. Proponent wins!")
@@ -102,7 +99,6 @@ class Game:
                 print("Invalid input. Please enter a number corresponding to one of the options.")
 
         argument = options[choice]
-
         self.opponent_arguments.append(argument)
         print(f"Opponent's argument: {self.data['Arguments'][argument]}")
         if self.verbose:
