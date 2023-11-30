@@ -1,4 +1,3 @@
-
 import argparse
 import json
 
@@ -61,14 +60,13 @@ class Game:
 
         self.step += 1
 
-
     def proponent_turn(self):
         if not self.opponent_arguments:  # Check if opponent_arguments is empty
             argument = self.claimed_argument
         else:
-            # Find an argument that attacks the opponent's last argument and has not been used by the opponent
+            # Find an argument that attacks the opponent's last argument and has not been used in this round
             for node in self.G.predecessors(self.opponent_arguments[-1]):
-                if node not in self.opponent_arguments:
+                if node not in self.proponent_arguments:
                     argument = node
                     break
             else:
@@ -76,7 +74,6 @@ class Game:
                 return False
 
         self.proponent_arguments.append(argument)
-        self.G.remove_node(argument)
         print(f"Proponent's argument: {self.data['Arguments'][argument]}")
         if self.verbose:
             print("Game state:", self.__dict__)
@@ -108,7 +105,6 @@ class Game:
         argument = options[choice]
 
         self.opponent_arguments.append(argument)
-        self.G.remove_node(argument)
         print(f"Opponent's argument: {self.data['Arguments'][argument]}")
         if self.verbose:
             print("Game state:", self.__dict__)
