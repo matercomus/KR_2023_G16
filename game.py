@@ -1,5 +1,6 @@
 import argparse
 import json
+import random
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -64,14 +65,12 @@ class Game:
         if not self.opponent_arguments:  # Check if opponent_arguments is empty
             argument = self.claimed_argument
         else:
-            # Find an argument that attacks the opponent's last argument and has not been used in this round
-            for node in self.G.predecessors(self.opponent_arguments[-1]):
-                if node not in self.proponent_arguments:
-                    argument = node
-                    break
-            else:
+            # Find an argument that attacks the opponent's last argument and has not been used by the proponent
+            options = [node for node in self.G.predecessors(self.opponent_arguments[-1]) if node not in self.proponent_arguments]
+            if not options:
                 print("Proponent cannot make a move. Opponent wins!")
                 return False
+            argument = random.choice(options)  # choosing randomly
 
         self.proponent_arguments.append(argument)
         print(f"Proponent's argument: {self.data['Arguments'][argument]}")
