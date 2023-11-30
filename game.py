@@ -1,3 +1,4 @@
+
 import argparse
 import json
 
@@ -19,6 +20,12 @@ class Game:
         self.game_text = ""
         self.step = 1
 
+        # Initialize the graph
+        self.G = nx.DiGraph()
+        self.G.add_nodes_from(self.data['Arguments'].keys())
+        self.G.add_edges_from(self.data['Attack Relations'])
+        self.pos = nx.spring_layout(self.G, seed=10)  # Graph Layout
+
     def load_data(self):
         with open(self.data_file, 'r') as f:
             data = json.load(f)
@@ -27,12 +34,6 @@ class Game:
     def draw_graph(self):
         if not self.show_graph and not self.save_graph:
             return
-
-        if self.step == 1:
-            self.G = nx.DiGraph()
-            self.G.add_nodes_from(self.data['Arguments'].keys())
-            self.G.add_edges_from(self.data['Attack Relations'])
-            self.pos = nx.spring_layout(self.G, seed=10)  # Graph Layout
 
         plt.figure(figsize=(16, 10))
         nx.draw_networkx_nodes(self.G, self.pos, nodelist=self.proponent_arguments, node_color='blue')
@@ -60,20 +61,22 @@ class Game:
 
         self.step += 1
 
+
     def proponent_turn(self):
-        if not self.proponent_arguments:
+        if not self.opponent_arguments:  # Check if opponent_arguments is empty
             argument = self.claimed_argument
         else:
             # Find an argument that attacks the opponent's last argument and has not been used by the opponent
-            for relation in self.data['Attack Relations']:
-                if relation[1] == self.opponent_arguments[-1] and relation[0] not in self.opponent_arguments:
-                    argument = relation[0]
+            for node in self.G.predecessors(self.opponent_arguments[-1]):
+                if node not in self.opponent_arguments:
+                    argument = node
                     break
             else:
                 print("Proponent cannot make a move. Opponent wins!")
                 return False
 
         self.proponent_arguments.append(argument)
+        self.G.remove_node(argument)
         print(f"Proponent's argument: {self.data['Arguments'][argument]}")
         if self.verbose:
             print("Game state:", self.__dict__)
@@ -81,12 +84,9 @@ class Game:
 
     def opponent_turn(self):
         options = []
-        for relation in self.data['Attack Relations']:
-            if relation[0] not in self.opponent_arguments:
-                if len(self.proponent_arguments) > 1 and relation[1] in self.proponent_arguments:
-                    options.append(relation[0])
-                elif relation[1] == self.proponent_arguments[-1]:
-                    options.append(relation[0])
+        for node in self.G.nodes:
+            if node not in self.opponent_arguments and self.G.has_edge(node, self.proponent_arguments[-1]):
+                options.append(node)
 
         if not options:
             print("Opponent has no choices left. Proponent wins!")
@@ -108,6 +108,7 @@ class Game:
         argument = options[choice]
 
         self.opponent_arguments.append(argument)
+        self.G.remove_node(argument)
         print(f"Opponent's argument: {self.data['Arguments'][argument]}")
         if self.verbose:
             print("Game state:", self.__dict__)
