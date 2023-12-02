@@ -98,17 +98,19 @@ class Game:
             # The proponent's argument is the claimed argument
             argument = self.claimed_argument
         else:
-            # Find an argument that attacks the opponent's last argument and has not been used by the proponent
+            # Find an argument that attacks the opponent's last argument and has not been used by the opponent
             options = [
                 node
                 for node in self.G.predecessors(self.opponent_arguments[-1])
-                if node not in self.proponent_arguments
+                # if node not in self.opponent_arguments
             ]
             if not options:
                 print("Proponent cannot make a move. Opponent wins!")
                 return False
             # Choose a random argument from the options
             argument = random.choice(options)
+            if argument in self.opponent_arguments:
+                print("The proponent used an argument previously used by the opponent (contradiction). Opponent wins!")
 
         # Add the argument to the proponent's arguments
         self.proponent_arguments.append(argument)
@@ -121,13 +123,14 @@ class Game:
 
     # Opponent's turn
     def opponent_turn(self):
-        # Find an argument that has not been used by the opponent and attacks the proponent's last argument
-        options = [
-            node
-            for node in self.G.nodes
-            if node not in self.opponent_arguments
-            and self.G.has_edge(node, self.proponent_arguments[-1])
-        ]
+        # Find an argument that has not been used by the opponent and attacks the proponent's arguments
+        options = []
+        for argument in set(self.proponent_arguments):
+            attacks = self.G.predecessors(argument)
+            for attack in attacks:
+                if attack not in self.opponent_arguments:
+                    options.append(attack)
+
         if not options:
             print("Opponent has no choices left. Proponent wins!")
             return False
@@ -151,6 +154,9 @@ class Game:
 
         # The opponent's argument is the chosen option
         argument = options[choice]
+        if argument in self.proponent_arguments:
+            print("The opponent used an argument previously used by the proponent (contradiction). Opponent wins!")
+            return False
         # Add the argument to the opponent's arguments
         self.opponent_arguments.append(argument)
         # Print the opponent's argument
