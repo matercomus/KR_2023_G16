@@ -1,3 +1,5 @@
+import datetime
+import os
 import argparse
 import json
 import random
@@ -83,7 +85,29 @@ class Game:
         plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
 
         if self.save_graph:
-            plt.savefig(f"game_output_{self.step}.png")
+            # Get the filename part of the data_file value without the extension
+            data_file_name = os.path.splitext(os.path.basename(self.data_file))[0]
+
+            # Get the current timestamp
+            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
+
+            # Define the directory
+            directory = os.path.join(
+                args.save_graph,
+                data_file_name,
+                f"{data_file_name}_claimed_{self.claimed_argument}_{timestamp}",
+            )
+
+            # Create the directory if it doesn't exist
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+            # Create a filename using the data_file_name and claimed_argument attributes
+            filename = os.path.join(
+                directory,
+                f"{data_file_name}_claimed_{self.claimed_argument}_step_{self.step}.png",
+            )
+            plt.savefig(filename)
 
         if self.show_graph:
             plt.show(block=False)
@@ -110,7 +134,9 @@ class Game:
             # Choose a random argument from the options
             argument = random.choice(options)
             if argument in self.opponent_arguments:
-                print("The proponent used an argument previously used by the opponent (contradiction). Opponent wins!")
+                print(
+                    "The proponent used an argument previously used by the opponent (contradiction). Opponent wins!"
+                )
 
         # Add the argument to the proponent's arguments
         self.proponent_arguments.append(argument)
@@ -155,7 +181,9 @@ class Game:
         # The opponent's argument is the chosen option
         argument = options[choice]
         if argument in self.proponent_arguments:
-            print("The opponent used an argument previously used by the proponent (contradiction). Opponent wins!")
+            print(
+                "The opponent used an argument previously used by the proponent (contradiction). Opponent wins!"
+            )
             return False
         # Add the argument to the opponent's arguments
         self.opponent_arguments.append(argument)
@@ -204,7 +232,11 @@ if __name__ == "__main__":
         "--show_graph", action="store_true", help="If set, show the graph."
     )
     parser.add_argument(
-        "--save_graph", action="store_true", help="If set, save the graph."
+        "--save_graph",
+        nargs="?",
+        const=".",
+        type=str,
+        help="If set, save the graph. Optional: provide a directory.",
     )
     parser.add_argument(
         "--add_game_text",
