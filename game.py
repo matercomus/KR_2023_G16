@@ -89,7 +89,7 @@ class Game:
             data_file_name = os.path.splitext(os.path.basename(self.data_file))[0]
 
             # Get the current timestamp
-            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
+            timestamp = datetime.datetime.now().strftime("%Y%m%d%H")
 
             # Define the directory
             directory = os.path.join(
