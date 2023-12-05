@@ -1,5 +1,4 @@
 import uuid
-import datetime
 import os
 import argparse
 import json
@@ -90,14 +89,11 @@ class Game:
             # Get the filename part of the data_file value without the extension
             data_file_name = os.path.splitext(os.path.basename(self.data_file))[0]
 
-            # Get the current timestamp
-            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
-
             # Define the directory
             directory = os.path.join(
                 args.save_graph,
                 data_file_name,
-                f"{data_file_name}_claimed_{self.claimed_argument}_{timestamp}_{self.id}",
+                f"{data_file_name}_claimed_{self.claimed_argument}_{self.id}",
             )
 
             # Create the directory if it doesn't exist
@@ -206,9 +202,7 @@ class Game:
             ):  # If the proponent cannot make a move, break the loop
                 break
             # Add the proponent's argument to the game text
-            self.game_text += (
-                f"Proponent: {self.data['Arguments'][self.proponent_arguments[-1]]}\n"
-            )
+            self.game_text += f"Step({self.step}) Proponent: {self.data['Arguments'][self.proponent_arguments[-1]]}\n"
             self.draw_graph()  # Draw the graph after updating game text
 
             print("\nOpponent's turn...")
@@ -217,9 +211,7 @@ class Game:
             ):  # If the opponent cannot make a move, break the loop
                 break
             # Add the opponent's argument to the game text
-            self.game_text += (
-                f"Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
-            )
+            self.game_text += f"Step({self.step}) Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
             self.draw_graph()  # Draw the graph after updating game text
 
 
