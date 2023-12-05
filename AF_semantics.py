@@ -64,7 +64,7 @@ class ArgumentationFramework:
 
 
 # Define the full file path
-path = os.path.join(os.getcwd(), "Argumentation_Framework_tests/AF_accept_test.json")
-argument = "E"
+path = os.path.join(os.getcwd(), "Argumentation_Framework_tests/AF_test_1.json")
+argument = ""
 
 af = ArgumentationFramework(path, argument)
