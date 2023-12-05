@@ -1,3 +1,4 @@
+import uuid
 import datetime
 import os
 import argparse
@@ -37,6 +38,7 @@ class Game:
         self.G.add_nodes_from(self.data["Arguments"].keys())
         self.G.add_edges_from(self.data["Attack Relations"])
         self.pos = nx.spring_layout(self.G, seed=10)
+        self.id = uuid.uuid4()
 
     # Load the data from the file
     def load_data(self):
@@ -89,13 +91,13 @@ class Game:
             data_file_name = os.path.splitext(os.path.basename(self.data_file))[0]
 
             # Get the current timestamp
-            timestamp = datetime.datetime.now().strftime("%Y%m%d%H")
+            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
 
             # Define the directory
             directory = os.path.join(
                 args.save_graph,
                 data_file_name,
-                f"{data_file_name}_claimed_{self.claimed_argument}_{timestamp}",
+                f"{data_file_name}_claimed_{self.claimed_argument}_{timestamp}_{self.id}",
             )
 
             # Create the directory if it doesn't exist
