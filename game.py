@@ -2,7 +2,6 @@ import uuid
 import os
 import argparse
 import json
-import random
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -116,7 +115,8 @@ class Game:
 
     # Proponent's turn
     def proponent_turn(self):
-        if not self.opponent_arguments:  # Check if opponent_arguments is empty
+        # If it's the first turn (opponent_arguments is empty)
+        if not self.opponent_arguments:
             # The proponent's argument is the claimed argument
             argument = self.claimed_argument
         else:
@@ -126,33 +126,30 @@ class Game:
                 for node in self.G.predecessors(self.opponent_arguments[-1])
                 if node not in self.opponent_arguments
             ]
+            # If there are no options, the proponent cannot make a move and the opponent wins
             if not options:
                 print("Proponent cannot make a move. Opponent wins!")
                 return False
-            # Choose an argument that the opponent cannot counter
-            for option in options:
-                if not any(
-                    counter_option
-                    for counter_option in self.G.successors(option)
-                    if counter_option not in self.opponent_arguments
-                ):
-                    argument = option
-                    break
-            else:
-                # If no such argument exists, choose a random argument from the options
-                argument = random.choice(options)
+            # Sort the options in descending order based on the number of successors (arguments they attack)
+            # This is the depth-first search strategy, which aims to maximize the proponent's influence on the argument graph
+            options.sort(
+                key=lambda option: len(list(self.G.successors(option))), reverse=True
+            )
+            # Choose the argument with the most successors
+            argument = options[0]
+            # If the chosen argument has been used by the opponent, it's a contradiction and the opponent wins
             if argument in self.opponent_arguments:
                 print(
                     "The proponent used an argument previously used by the opponent (contradiction). Opponent wins!"
                 )
                 return False
 
-        # Add the argument to the proponent's arguments
+        # Add the chosen argument to the proponent's arguments
         self.proponent_arguments.append(argument)
         # Print the proponent's argument
         print(f"Proponent's argument: {self.data['Arguments'][argument]}")
+        # If verbose mode is on, print the game state
         if self.verbose:
-            # Print the game state if verbose is True
             print("Game state:", self.__dict__)
         return True
 
