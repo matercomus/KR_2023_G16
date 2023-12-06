@@ -2,14 +2,11 @@ import uuid
 import os
 import argparse
 import json
-
 import matplotlib.pyplot as plt
 import networkx as nx
 
 
-# Define the Game class
 class Game:
-    # Initialize the game with the given parameters
     def __init__(
         self,
         data_file,
@@ -22,7 +19,7 @@ class Game:
         choose_opponent_move=None,
     ):
         self.data_file = data_file
-        self.data = self.load_data()
+        self.data = self.load_data(data_file)
         self.claimed_argument = claimed_argument
         self.proponent_arguments = []
         self.opponent_arguments = []
@@ -34,38 +31,38 @@ class Game:
         self.step = 1
         self.choose_proponent_move = choose_proponent_move
         self.choose_opponent_move = choose_opponent_move
-
-        # Initialize the graph
-        self.G = nx.DiGraph()
-        self.G.add_nodes_from(self.data["Arguments"].keys())
-        self.G.add_edges_from(self.data["Attack Relations"])
-        self.pos = nx.spring_layout(self.G, seed=10)
+        self.G = self.initialize_graph()
         self.id = uuid.uuid4()
 
-    # Load the data from the file
-    def load_data(self):
-        with open(self.data_file, "r") as f:
-            data = json.load(f)
-        return data
+    @staticmethod
+    def load_data(data_file):
+        with open(data_file, "r") as f:
+            return json.load(f)
 
-    # Draw the graph
+    def initialize_graph(self):
+        G = nx.DiGraph()
+        G.add_nodes_from(self.data["Arguments"].keys())
+        G.add_edges_from(self.data["Attack Relations"])
+        return G
+
     def draw_graph(self):
         if not self.show_graph and not self.save_graph:
             return
 
         plt.figure(figsize=(16, 10))
+        pos = nx.spring_layout(self.G, seed=10)
         nx.draw_networkx_nodes(
-            self.G, self.pos, nodelist=self.proponent_arguments, node_color="blue"
+            self.G, pos, nodelist=self.proponent_arguments, node_color="blue"
         )
         nx.draw_networkx_nodes(
-            self.G, self.pos, nodelist=self.opponent_arguments, node_color="red"
+            self.G, pos, nodelist=self.opponent_arguments, node_color="red"
         )
         nx.draw_networkx_edges(
-            self.G, self.pos, edge_color="black", arrowstyle="->", arrowsize=20
+            self.G, pos, edge_color="black", arrowstyle="->", arrowsize=20
         )
-        nx.draw_networkx_labels(self.G, self.pos, font_size=12)
+        nx.draw_networkx_labels(self.G, pos, font_size=12)
         argument_text = {k: f"{v}" for k, v in self.data["Arguments"].items()}
-        pos_higher = {k: (v[0], v[1] + 0.04) for k, v in self.pos.items()}
+        pos_higher = {k: (v[0], v[1] + 0.04) for k, v in pos.items()}
         nx.draw_networkx_labels(
             self.G,
             pos_higher,
@@ -74,7 +71,6 @@ class Game:
             font_size=8,
         )
 
-        # Add game text to the graph
         if self.add_game_text:
             plt.text(
                 0.5,
@@ -85,30 +81,10 @@ class Game:
                 transform=plt.gcf().transFigure,
             )
 
-        # Adjust the margins
         plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
 
         if self.save_graph:
-            # Get the filename part of the data_file value without the extension
-            data_file_name = os.path.splitext(os.path.basename(self.data_file))[0]
-
-            # Define the directory
-            directory = os.path.join(
-                args.save_graph,
-                data_file_name,
-                f"{data_file_name}_claimed_{self.claimed_argument}_{self.id}",
-            )
-
-            # Create the directory if it doesn't exist
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-
-            # Create a filename using the data_file_name and claimed_argument attributes
-            filename = os.path.join(
-                directory,
-                f"{data_file_name}_claimed_{self.claimed_argument}_step_{self.step}.png",
-            )
-            plt.savefig(filename)
+            self.save_graph_to_file()
 
         if self.show_graph:
             plt.show(block=False)
@@ -117,122 +93,102 @@ class Game:
 
         self.step += 1
 
-    # Proponent's turn
+    def save_graph_to_file(self):
+        data_file_name = os.path.splitext(os.path.basename(self.data_file))[0]
+        directory = os.path.join(
+            args.save_graph,
+            data_file_name,
+            f"{data_file_name}_claimed_{self.claimed_argument}_{self.id}",
+        )
+        os.makedirs(directory, exist_ok=True)
+        filename = os.path.join(
+            directory,
+            f"{data_file_name}_claimed_{self.claimed_argument}_step_{self.step}.png",
+        )
+        plt.savefig(filename)
+
     def proponent_turn(self):
-        if not self.opponent_arguments:  # Check if opponent_arguments is empty
-            # The proponent's argument is the claimed argument
-            argument = self.claimed_argument
-        else:
-            # Find an argument that attacks the opponent's last argument and has not been used by the opponent
-            options = [
-                node
-                for node in self.G.predecessors(self.opponent_arguments[-1])
-                if node not in self.opponent_arguments
-            ]
-            if not options:
-                print("Proponent cannot make a move. Opponent wins!")
-                return False
-            # If a function for choosing the proponent's move is provided, use it
-            if self.choose_proponent_move:
-                argument = self.choose_proponent_move(self, options)
-            else:
-                argument = options[0]
+        options = (
+            [node for node in self.G.predecessors(self.opponent_arguments[-1])]
+            if self.opponent_arguments
+            else [self.claimed_argument]
+        )
+        if not options or options[0] in self.opponent_arguments:
+            print("Proponent cannot make a move. Opponent wins!")
+            return False
 
-            # Check if the chosen argument has been used by the opponent
-            if argument in self.opponent_arguments:
-                print(
-                    "The proponent used an argument previously used by the opponent (contradiction). Opponent wins!"
-                )
-                return False
-
-        # Add the chosen argument to the proponent's arguments
+        argument = (
+            self.choose_proponent_move(self, options)
+            if self.choose_proponent_move
+            else options[0]
+        )
         self.proponent_arguments.append(argument)
-        # Print the proponent's argument
         print(f"Proponent's argument: {self.data['Arguments'][argument]}")
-        # If verbose mode is on, print the game state
         if self.verbose:
             print("Game state:", self.__dict__)
         return True
 
-    # Opponent's turn
     def opponent_turn(self):
-        # Find an argument that has not been used by the opponent and attacks the proponent's arguments
-        options = []
-        for argument in set(self.proponent_arguments):
-            attacks = self.G.predecessors(argument)
-            for attack in attacks:
-                if attack not in self.opponent_arguments:
-                    options.append(attack)
-
+        options = [
+            attack
+            for argument in set(self.proponent_arguments)
+            for attack in self.G.predecessors(argument)
+            if attack not in self.opponent_arguments
+        ]
         if not options:
             print("Opponent has no choices left. Proponent wins!")
             return False
 
-        # If a function for choosing the opponent's move is provided, use it
-        if self.choose_opponent_move:
-            choice = self.choose_opponent_move(self, options)
-        else:
-            print("Opponent's options:")
-            for i, option in enumerate(options):
-                # Print the opponent's options
-                print(f"{i+1}. {self.data['Arguments'][option]}")
-
-            while True:
-                try:
-                    # Get the opponent's choice
-                    choice = int(input("Enter the number of your choice: ")) - 1
-                    if choice < 0 or choice >= len(options):
-                        raise ValueError
-                    break
-                except ValueError:
-                    print(
-                        "Invalid input. Please enter a number corresponding to one of the options."
-                    )
-
-        # The opponent's argument is the chosen option
+        choice = (
+            self.choose_opponent_move(self, options)
+            if self.choose_opponent_move
+            else self.get_user_choice(options)
+        )
         argument = options[choice]
         if argument in self.proponent_arguments:
             print(
                 "The opponent used an argument previously used by the proponent (contradiction). Opponent wins!"
             )
             return False
-        # Add the argument to the opponent's arguments
-        self.opponent_arguments.append(argument)
-        # Print the opponent's argument
-        print(f"Opponent's argument: {self.data['Arguments'][argument]}")
 
+        self.opponent_arguments.append(argument)
+        print(f"Opponent's argument: {self.data['Arguments'][argument]}")
         if self.verbose:
-            # Print the game state if verbose is True
             print("Game state:", self.__dict__)
         return True
 
-    # Play the game
+    @staticmethod
+    def get_user_choice(options):
+        print("Opponent's options:")
+        for i, option in enumerate(options):
+            print(f"{i+1}. {game.data['Arguments'][option]}")
+        while True:
+            try:
+                choice = int(input("Enter the number of your choice: ")) - 1
+                if 0 <= choice < len(options):
+                    return choice
+            except ValueError:
+                pass
+            print(
+                "Invalid input. Please enter a number corresponding to one of the options."
+            )
+
     def play(self):
         while True:
             print("\nProponent's turn...")
-            if (
-                not self.proponent_turn()
-            ):  # If the proponent cannot make a move, break the loop
+            if not self.proponent_turn():
                 break
-            # Add the proponent's argument to the game text
             self.game_text += f"Step({self.step}) Proponent: {self.data['Arguments'][self.proponent_arguments[-1]]}\n"
-            self.draw_graph()  # Draw the graph after updating game text
+            self.draw_graph()
 
             print("\nOpponent's turn...")
-            if (
-                not self.opponent_turn()
-            ):  # If the opponent cannot make a move, break the loop
+            if not self.opponent_turn():
                 break
-            # Add the opponent's argument to the game text
             self.game_text += f"Step({self.step}) Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
-            self.draw_graph()  # Draw the graph after updating game text
+            self.draw_graph()
 
 
 def choose_proponent_move(game, options):
-    """
-    Choose the option with the highest difference
-    between the number of successors and predecessors
-    """
     options.sort(
         key=lambda option: len(list(game.G.successors(option)))
         - len(list(game.G.predecessors(option))),
@@ -264,9 +220,8 @@ if __name__ == "__main__":
         help="If set, add game text to the graph.",
     )
 
-    args = parser.parse_args()  # Parse the command-line arguments
+    args = parser.parse_args()
 
-    # Create a Game object and play the game
     game = Game(
         args.data_file,
         args.claimed_argument,
@@ -275,6 +230,5 @@ if __name__ == "__main__":
         args.save_graph,
         args.add_game_text,
         choose_proponent_move,
-        # choose_opponent_move,
     )
     game.play()
