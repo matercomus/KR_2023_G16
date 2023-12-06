@@ -18,6 +18,8 @@ class Game:
         show_graph=False,
         save_graph=False,
         add_game_text=False,
+        choose_proponent_move=None,
+        choose_opponent_move=None,
     ):
         self.data_file = data_file
         self.data = self.load_data()
@@ -30,6 +32,8 @@ class Game:
         self.add_game_text = add_game_text
         self.game_text = ""
         self.step = 1
+        self.choose_proponent_move = choose_proponent_move
+        self.choose_opponent_move = choose_opponent_move
 
         # Initialize the graph
         self.G = nx.DiGraph()
@@ -128,15 +132,11 @@ class Game:
             if not options:
                 print("Proponent cannot make a move. Opponent wins!")
                 return False
-            # Sort the options based on the difference between the number of successors and the number of predecessors
-            # This aims to choose an argument that can attack many other arguments but is hard to counter
-            options.sort(
-                key=lambda option: len(list(self.G.successors(option)))
-                - len(list(self.G.predecessors(option))),
-                reverse=True,
-            )
-            # Choose the argument with the highest difference
-            argument = options[0]
+            # If a function for choosing the proponent's move is provided, use it
+            if self.choose_proponent_move:
+                argument = self.choose_proponent_move(self, options)
+            else:
+                argument = options[0]
 
             # Check if the chosen argument has been used by the opponent
             if argument in self.opponent_arguments:
@@ -168,22 +168,26 @@ class Game:
             print("Opponent has no choices left. Proponent wins!")
             return False
 
-        print("Opponent's options:")
-        for i, option in enumerate(options):
-            # Print the opponent's options
-            print(f"{i+1}. {self.data['Arguments'][option]}")
+        # If a function for choosing the opponent's move is provided, use it
+        if self.choose_opponent_move:
+            choice = self.choose_opponent_move(self, options)
+        else:
+            print("Opponent's options:")
+            for i, option in enumerate(options):
+                # Print the opponent's options
+                print(f"{i+1}. {self.data['Arguments'][option]}")
 
-        while True:
-            try:
-                # Get the opponent's choice
-                choice = int(input("Enter the number of your choice: ")) - 1
-                if choice < 0 or choice >= len(options):
-                    raise ValueError
-                break
-            except ValueError:
-                print(
-                    "Invalid input. Please enter a number corresponding to one of the options."
-                )
+            while True:
+                try:
+                    # Get the opponent's choice
+                    choice = int(input("Enter the number of your choice: ")) - 1
+                    if choice < 0 or choice >= len(options):
+                        raise ValueError
+                    break
+                except ValueError:
+                    print(
+                        "Invalid input. Please enter a number corresponding to one of the options."
+                    )
 
         # The opponent's argument is the chosen option
         argument = options[choice]
@@ -224,6 +228,19 @@ class Game:
             self.draw_graph()  # Draw the graph after updating game text
 
 
+def choose_proponent_move(game, options):
+    """
+    Choose the option with the highest difference
+    between the number of successors and predecessors
+    """
+    options.sort(
+        key=lambda option: len(list(game.G.successors(option)))
+        - len(list(game.G.predecessors(option))),
+        reverse=True,
+    )
+    return options[0]
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Play the argumentation game.")
     parser.add_argument("data_file", type=str, help="The path to the data file.")
@@ -257,5 +274,7 @@ if __name__ == "__main__":
         args.show_graph,
         args.save_graph,
         args.add_game_text,
+        choose_proponent_move,
+        # choose_opponent_move,
     )
     game.play()
