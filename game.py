@@ -124,17 +124,28 @@ class Game:
             options = [
                 node
                 for node in self.G.predecessors(self.opponent_arguments[-1])
-                # if node not in self.opponent_arguments
+                if node not in self.opponent_arguments
             ]
             if not options:
                 print("Proponent cannot make a move. Opponent wins!")
                 return False
-            # Choose a random argument from the options
-            argument = random.choice(options)
+            # Choose an argument that the opponent cannot counter
+            for option in options:
+                if not any(
+                    counter_option
+                    for counter_option in self.G.successors(option)
+                    if counter_option not in self.opponent_arguments
+                ):
+                    argument = option
+                    break
+            else:
+                # If no such argument exists, choose a random argument from the options
+                argument = random.choice(options)
             if argument in self.opponent_arguments:
                 print(
                     "The proponent used an argument previously used by the opponent (contradiction). Opponent wins!"
                 )
+                return False
 
         # Add the argument to the proponent's arguments
         self.proponent_arguments.append(argument)
