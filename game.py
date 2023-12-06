@@ -13,7 +13,7 @@ class Game:
         claimed_argument,
         verbose=False,
         show_graph=False,
-        save_graph=False,
+        save_graph_dir=None,
         add_game_text=False,
         choose_proponent_move=None,
         choose_opponent_move=None,
@@ -25,7 +25,7 @@ class Game:
         self.opponent_arguments = []
         self.verbose = verbose
         self.show_graph = show_graph
-        self.save_graph = save_graph
+        self.save_graph_dir = save_graph_dir
         self.add_game_text = add_game_text
         self.game_text = ""
         self.step = 1
@@ -46,7 +46,7 @@ class Game:
         return G
 
     def draw_graph(self):
-        if not self.show_graph and not self.save_graph:
+        if not self.show_graph and not self.save_graph_dir:
             return
 
         plt.figure(figsize=(16, 10))
@@ -83,7 +83,7 @@ class Game:
 
         plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
 
-        if self.save_graph:
+        if self.save_graph_dir:
             self.save_graph_to_file()
 
         if self.show_graph:
@@ -95,17 +95,18 @@ class Game:
 
     def save_graph_to_file(self):
         data_file_name = os.path.splitext(os.path.basename(self.data_file))[0]
-        directory = os.path.join(
-            args.save_graph,
-            data_file_name,
-            f"{data_file_name}_claimed_{self.claimed_argument}_{self.id}",
-        )
-        os.makedirs(directory, exist_ok=True)
-        filename = os.path.join(
-            directory,
-            f"{data_file_name}_claimed_{self.claimed_argument}_step_{self.step}.png",
-        )
-        plt.savefig(filename)
+        if self.save_graph_dir:
+            directory = os.path.join(
+                self.save_graph_dir,
+                data_file_name,
+                f"{data_file_name}_claimed_{self.claimed_argument}_{self.id}",
+            )
+            os.makedirs(directory, exist_ok=True)
+            filename = os.path.join(
+                directory,
+                f"{data_file_name}_claimed_{self.claimed_argument}_step_{self.step}.png",
+            )
+            plt.savefig(filename)
 
     def proponent_turn(self):
         options = (
@@ -157,11 +158,10 @@ class Game:
             print("Game state:", self.__dict__)
         return True
 
-    @staticmethod
-    def get_user_choice(options):
+    def get_user_choice(self, options):
         print("Opponent's options:")
         for i, option in enumerate(options):
-            print(f"{i+1}. {game.data['Arguments'][option]}")
+            print(f"{i+1}. {self.data['Arguments'][option]}")
         while True:
             try:
                 choice = int(input("Enter the number of your choice: ")) - 1
