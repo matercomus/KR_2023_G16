@@ -115,8 +115,7 @@ class Game:
 
     # Proponent's turn
     def proponent_turn(self):
-        # If it's the first turn (opponent_arguments is empty)
-        if not self.opponent_arguments:
+        if not self.opponent_arguments:  # Check if opponent_arguments is empty
             # The proponent's argument is the claimed argument
             argument = self.claimed_argument
         else:
@@ -126,18 +125,20 @@ class Game:
                 for node in self.G.predecessors(self.opponent_arguments[-1])
                 if node not in self.opponent_arguments
             ]
-            # If there are no options, the proponent cannot make a move and the opponent wins
             if not options:
                 print("Proponent cannot make a move. Opponent wins!")
                 return False
-            # Sort the options in descending order based on the number of successors (arguments they attack)
-            # This is the depth-first search strategy, which aims to maximize the proponent's influence on the argument graph
+            # Sort the options based on the difference between the number of successors and the number of predecessors
+            # This aims to choose an argument that can attack many other arguments but is hard to counter
             options.sort(
-                key=lambda option: len(list(self.G.successors(option))), reverse=True
+                key=lambda option: len(list(self.G.successors(option)))
+                - len(list(self.G.predecessors(option))),
+                reverse=True,
             )
-            # Choose the argument with the most successors
+            # Choose the argument with the highest difference
             argument = options[0]
-            # If the chosen argument has been used by the opponent, it's a contradiction and the opponent wins
+
+            # Check if the chosen argument has been used by the opponent
             if argument in self.opponent_arguments:
                 print(
                     "The proponent used an argument previously used by the opponent (contradiction). Opponent wins!"
