@@ -9,7 +9,6 @@ class ArgumentationFramework:
         self.argument = argument
         self.arguments = list(data["Arguments"].keys())
         self.attacks = tuple(tuple(pair) for pair in data["Attack Relations"])
-
         fast_check = self.fast_check()
         if not fast_check:
             print(f"'{self.argument}' has no attackers, this argument is credulously acceptable under Admissible Semantics.")
@@ -71,6 +70,6 @@ class ArgumentationFramework:
         return set(subsets)
 
 path = os.path.join(os.getcwd(), "Argumentation_Framework_tests/AF_test_3.json")
-argument = "A"
+argument = "D"
 
 af = ArgumentationFramework(path, argument)
