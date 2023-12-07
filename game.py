@@ -14,6 +14,7 @@ class Game:
         verbose=False,
         show_graph=False,
         save_graph_dir=None,
+        save_res_dir=None,
         add_game_text=False,
         choose_proponent_move=None,
         choose_opponent_move=None,
@@ -26,9 +27,11 @@ class Game:
         self.verbose = verbose
         self.show_graph = show_graph
         self.save_graph_dir = save_graph_dir
+        self.save_res_dir = save_res_dir
         self.add_game_text = add_game_text
         self.game_text = ""
         self.step = 1
+        self.winner = None
         self.choose_proponent_move = choose_proponent_move
         self.choose_opponent_move = choose_opponent_move
         self.G = self.initialize_graph()
@@ -108,6 +111,28 @@ class Game:
             )
             plt.savefig(filename)
 
+    def save_results(self):
+        results = {
+            "proponent_arguments": self.proponent_arguments,
+            "opponent_arguments": self.opponent_arguments,
+            "game_text": self.game_text,
+            "winner": self.winner,
+        }
+        data_file_name = os.path.splitext(os.path.basename(self.data_file))[0]
+        if self.save_res_dir:
+            directory = os.path.join(
+                self.save_res_dir,
+                data_file_name,
+                f"{data_file_name}_claimed_{self.claimed_argument}_{self.id}",
+            )
+            os.makedirs(directory, exist_ok=True)
+            filename = os.path.join(
+                directory,
+                f"{data_file_name}_claimed_{self.claimed_argument}_{self.id}_results.json",
+            )
+            with open(filename, "w") as f:
+                json.dump(results, f)
+
     def proponent_turn(self):
         options = (
             [node for node in self.G.predecessors(self.opponent_arguments[-1])]
@@ -116,6 +141,7 @@ class Game:
         )
         if not options or options[0] in self.opponent_arguments:
             print("Proponent cannot make a move. Opponent wins!")
+            self.winner = "Opponent"
             return False
 
         argument = (
@@ -138,6 +164,7 @@ class Game:
         ]
         if not options:
             print("Opponent has no choices left. Proponent wins!")
+            self.winner = "Proponent"
             return False
 
         argument = (
@@ -149,6 +176,7 @@ class Game:
             print(
                 "The opponent used an argument previously used by the proponent (contradiction). Opponent wins!"
             )
+            self.winner = "Opponent"
             return False
 
         self.opponent_arguments.append(argument)
@@ -186,6 +214,9 @@ class Game:
             self.game_text += f"Step({self.step}) Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
             self.draw_graph()
 
+        # Save results
+        self.save_results()
+
 
 def choose_proponent_move(game, options):
     options.sort(
@@ -214,6 +245,13 @@ if __name__ == "__main__":
         help="If set, save the graph. Optional: provide a directory.",
     )
     parser.add_argument(
+        "--save_res",
+        nargs="?",
+        const=".",
+        type=str,
+        help="If set, save the results. Optional: provide a directory.",
+    )
+    parser.add_argument(
         "--add_game_text",
         action="store_true",
         help="If set, add game text to the graph.",
@@ -227,6 +265,7 @@ if __name__ == "__main__":
         args.verbose,
         args.show_graph,
         args.save_graph,
+        args.save_res,
         args.add_game_text,
         choose_proponent_move,
     )
