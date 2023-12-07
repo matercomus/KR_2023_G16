@@ -140,12 +140,11 @@ class Game:
             print("Opponent has no choices left. Proponent wins!")
             return False
 
-        choice = (
+        argument = (
             self.choose_opponent_move(self, options)
             if self.choose_opponent_move
             else self.get_user_choice(options)
         )
-        argument = options[choice]
         if argument in self.proponent_arguments:
             print(
                 "The opponent used an argument previously used by the proponent (contradiction). Opponent wins!"
@@ -166,7 +165,7 @@ class Game:
             try:
                 choice = int(input("Enter the number of your choice: ")) - 1
                 if 0 <= choice < len(options):
-                    return choice
+                    return options[choice]
             except ValueError:
                 pass
             print(
