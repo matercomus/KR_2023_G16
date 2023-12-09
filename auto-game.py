@@ -20,7 +20,8 @@ class AutoGame:
         self.claimed_argument = claimed_argument
         self.results = {}
 
-    def choose_proponent_move(self, game, options):
+    @staticmethod
+    def choose_proponent_move(game, options):
         options.sort(
             key=lambda option: len(list(game.G.successors(option)))
             - len(list(game.G.predecessors(option))),
@@ -28,7 +29,8 @@ class AutoGame:
         )
         return options[0]
 
-    def choose_opponent_move(self, _, options):
+    @staticmethod
+    def choose_opponent_move(_, options):
         return random.choice(options)
 
     def play_games(self):
@@ -83,7 +85,7 @@ class AutoGame:
 
 if __name__ == "__main__":
     auto_game = AutoGame(
-        n_games=5,
+        n_games=100,
         data_path="Argumentation_Framework_tests",  # directory path
         # save_graph_dir="test_dir",  # save dir path
         save_res_dir="test_dir",  # save dir path
