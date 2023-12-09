@@ -22,12 +22,44 @@ class AutoGame:
 
     @staticmethod
     def choose_proponent_move(game, options):
-        options.sort(
-            key=lambda option: len(list(game.G.successors(option)))
-            - len(list(game.G.predecessors(option))),
-            reverse=True,
-        )
-        return options[0]
+        best_argument = None
+        best_path_length = float("inf")
+
+        def dfs(argument, path, visited_proponent, visited_opponent):
+            nonlocal best_argument, best_path_length
+
+            # Losing conditions
+            if (
+                argument in visited_opponent
+                or not game.G.predecessors(argument)
+                or argument in game.G.predecessors(argument)
+            ):
+                return False
+
+            # Winning condition
+            if all(pred in visited_proponent for pred in game.G.predecessors(argument)):
+                if len(path) < best_path_length:
+                    best_argument = path[0]
+                    best_path_length = len(path)
+                return True
+
+            for next_argument in game.G.predecessors(argument):
+                if next_argument not in visited_proponent:
+                    visited_proponent.add(next_argument)
+                    path.append(next_argument)
+                    if dfs(next_argument, path, visited_proponent, visited_opponent):
+                        return True
+                    path.pop()
+                    visited_proponent.remove(next_argument)
+
+            return False
+
+        for argument in options:
+            dfs(argument, [argument], {argument}, set(game.opponent_arguments))
+
+        return (
+            best_argument if best_argument else options[0]
+        )  # Fallback to the first option if no winning path is found
 
     @staticmethod
     def choose_opponent_move(_, options):
