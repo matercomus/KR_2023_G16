@@ -16,7 +16,6 @@ class Game:
         save_graph_dir=None,
         save_res_dir=None,
         add_game_text=False,
-        choose_proponent_move=None,
         choose_opponent_move=None,
     ):
         self.data_file = data_file
@@ -32,7 +31,6 @@ class Game:
         self.game_text = ""
         self.step = 1
         self.winner = None
-        self.choose_proponent_move = choose_proponent_move
         self.choose_opponent_move = choose_opponent_move
         self.G = self.initialize_graph()
         self.id = uuid.uuid4()
@@ -134,6 +132,42 @@ class Game:
             with open(filename, "w") as f:
                 json.dump(results, f)
 
+    def choose_proponent_move(self, options):
+        best_argument = None
+        best_path_length = float('inf')
+
+        def dfs(argument, path, visited_proponent, visited_opponent):
+            nonlocal best_argument, best_path_length
+
+            # Losing conditions
+            if argument in visited_opponent or \
+                not self.G.predecessors(argument) \
+                    or argument in self.G.predecessors(argument):
+                return False
+
+            # Winning condition
+            if all(pred in visited_proponent for pred in self.G.predecessors(argument)):
+                if len(path) < best_path_length:
+                    best_argument = path[0]
+                    best_path_length = len(path)
+                return True
+
+            for next_argument in self.G.predecessors(argument):
+                if next_argument not in visited_proponent:
+                    visited_proponent.add(next_argument)
+                    path.append(next_argument)
+                    if dfs(next_argument, path, visited_proponent, visited_opponent):
+                        return True
+                    path.pop()
+                    visited_proponent.remove(next_argument)
+
+            return False
+
+        for argument in options:
+            dfs(argument, [argument], {argument}, set(self.opponent_arguments))
+
+        return best_argument if best_argument else options[0]  # Fallback to the first option if no winning path is found
+
     def proponent_turn(self):
         options = (
             [node for node in self.G.predecessors(self.opponent_arguments[-1])]
@@ -144,12 +178,11 @@ class Game:
             print("Proponent cannot make a move. Opponent wins!")
             self.winner = "Opponent"
             return False
+        if len(options) == 1:
+            argument = options[0]
+        else:
+            argument = self.choose_proponent_move(options)
 
-        argument = (
-            self.choose_proponent_move(self, options)
-            if self.choose_proponent_move
-            else options[0]
-        )
         self.proponent_arguments.append(argument)
         print(f"Proponent's argument: {self.data['Arguments'][argument]}")
         if self.verbose:
@@ -219,19 +252,13 @@ class Game:
         self.save_results()
 
 
-def choose_proponent_move(game, options):
-    options.sort(
-        key=lambda option: len(list(game.G.successors(option)))
-        - len(list(game.G.predecessors(option))),
-        reverse=True,
-    )
-    return options[0]
-
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Play the argumentation game.")
-    parser.add_argument("data_file", type=str, help="The path to the data file.")
-    parser.add_argument("claimed_argument", type=str, help="The claimed argument.")
+    parser = argparse.ArgumentParser(
+        description="Play the argumentation game.")
+    parser.add_argument("data_file", type=str,
+                        help="The path to the data file.")
+    parser.add_argument("claimed_argument", type=str,
+                        help="The claimed argument.")
     parser.add_argument(
         "--verbose", action="store_true", help="If set, print verbose output."
     )
@@ -258,16 +285,18 @@ if __name__ == "__main__":
         help="If set, add game text to the graph.",
     )
 
-    args = parser.parse_args()
+    game = Game(data_file='.\Argumentation_Framework_tests\AF_test_4_hard.json', claimed_argument='A', save_graph_dir=".")
 
-    game = Game(
-        args.data_file,
-        args.claimed_argument,
-        args.verbose,
-        args.show_graph,
-        args.save_graph,
-        args.save_res,
-        args.add_game_text,
-        choose_proponent_move,
-    )
+    # args = parser.parse_args()
+
+    # game = Game(
+    #     args.data_file,
+    #     args.claimed_argument,
+    #     args.verbose,
+    #     args.show_graph,
+    #     args.save_graph,
+    #     args.save_res,
+    #     args.add_game_text,
+    #     # choose_proponent_move,
+    # )
     game.play()
