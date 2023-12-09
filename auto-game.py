@@ -1,3 +1,4 @@
+import json
 import os
 import random
 from game import Game
@@ -17,7 +18,7 @@ class AutoGame:
         self.save_graph_dir = save_graph_dir
         self.save_res_dir = save_res_dir
         self.claimed_argument = claimed_argument
-        self.results = []
+        self.results = {}
 
     def choose_proponent_move(self, game, options):
         options.sort(
@@ -42,9 +43,15 @@ class AutoGame:
         else:
             # If it's a file, just play the game
             self.play_game(self.data_path, self.claimed_argument)
+        # Save results
+        self.write_results()
+
+    def write_results(self):
+        with open(os.path.join(self.save_res_dir, "results.json"), "w") as f:
+            json.dump(self.results, f)
 
     def play_game(self, data_file, claimed_argument):
-        for _ in range(self.n_games):
+        for n in range(self.n_games):
             game = Game(
                 data_file=data_file,
                 claimed_argument=claimed_argument,
@@ -56,11 +63,22 @@ class AutoGame:
                 choose_opponent_move=self.choose_opponent_move,
             )
             # If claimed_argument is None, select a random node from the graph
-            if claimed_argument is None:
-                game.claimed_argument = random.choice(list(game.G.nodes))
-            else:
-                game.claimed_argument = claimed_argument
+            game.claimed_argument = (
+                random.choice(list(game.G.nodes))
+                if claimed_argument is None
+                else claimed_argument
+            )
             game.play()
+            # Use the base name of the data file as the key
+            key = os.path.basename(data_file)
+            if key not in self.results:
+                self.results[key] = []
+            self.results[key].append(
+                {
+                    "game_number": n,
+                    "winner": game.winner,  # assuming game object has a winner attribute
+                }
+            )
 
 
 if __name__ == "__main__":
