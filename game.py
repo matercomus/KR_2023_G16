@@ -1,9 +1,9 @@
-import uuid
 import os
-import argparse
 import json
-import matplotlib.pyplot as plt
+import uuid
+import argparse
 import networkx as nx
+import matplotlib.pyplot as plt
 
 
 class Game:
@@ -51,7 +51,6 @@ class Game:
             return
 
         plt.figure(figsize=(16, 10))
-        # TODO: Add random noise to pos so that multiple same node moves are all visible
         pos = nx.spring_layout(self.G, seed=10)
         nx.draw_networkx_nodes(
             self.G, pos, nodelist=self.proponent_arguments, node_color="blue"
@@ -207,9 +206,7 @@ class Game:
             else self.get_user_choice(options)
         )
         if argument in self.proponent_arguments:
-            print(
-                "The opponent used an argument previously used by the proponent (contradiction). Opponent wins!"
-            )
+            print("The opponent used an argument previously used by the proponent (contradiction). Opponent wins!")
             self.winner = "Opponent"
             return False
 
@@ -230,9 +227,7 @@ class Game:
                     return options[choice]
             except ValueError:
                 pass
-            print(
-                "Invalid input. Please enter a number corresponding to one of the options."
-            )
+            print("Invalid input. Please enter a number corresponding to one of the options.")
 
     def play(self):
         while True:
@@ -248,23 +243,15 @@ class Game:
             self.game_text += f"Step({self.step}) Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
             self.draw_graph()
 
-        # Save results
         self.save_results()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Play the argumentation game.")
-    parser.add_argument("data_file", type=str,
-                        help="The path to the data file.")
-    parser.add_argument("claimed_argument", type=str,
-                        help="The claimed argument.")
-    parser.add_argument(
-        "--verbose", action="store_true", help="If set, print verbose output."
-    )
-    parser.add_argument(
-        "--show_graph", action="store_true", help="If set, show the graph."
-    )
+    parser = argparse.ArgumentParser(description="Play the argumentation game.")
+    parser.add_argument("data_file", type=str, help="The path to the data file.")
+    parser.add_argument("claimed_argument", type=str, help="The claimed argument.")
+    parser.add_argument("--verbose", action="store_true", help="If set, print verbose output.")
+    parser.add_argument("--show_graph", action="store_true", help="If set, show the graph.")
     parser.add_argument(
         "--save_graph",
         nargs="?",
@@ -284,19 +271,15 @@ if __name__ == "__main__":
         action="store_true",
         help="If set, add game text to the graph.",
     )
+    args = parser.parse_args()
 
-    game = Game(data_file='.\Argumentation_Framework_tests\AF_test_4_hard.json', claimed_argument='A', save_graph_dir=".")
-
-    # args = parser.parse_args()
-
-    # game = Game(
-    #     args.data_file,
-    #     args.claimed_argument,
-    #     args.verbose,
-    #     args.show_graph,
-    #     args.save_graph,
-    #     args.save_res,
-    #     args.add_game_text,
-    #     # choose_proponent_move,
-    # )
+    game = Game(
+        args.data_file,
+        args.claimed_argument,
+        args.verbose,
+        args.show_graph,
+        args.save_graph,
+        args.save_res,
+        args.add_game_text
+    )
     game.play()

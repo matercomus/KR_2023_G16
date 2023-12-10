@@ -1,5 +1,6 @@
 import os
 import json
+import argparse
 from itertools import combinations
 
 
@@ -21,7 +22,7 @@ class ArgumentationFramework:
             data = json.load(f)
         return data
 
-    # Fast check
+    # Check the argument itself before computing the subsets.
     def fast_check(self):
         is_attacked = False
         for relation in self.attacks:
@@ -37,7 +38,7 @@ class ArgumentationFramework:
         # Generate all possible subsets of arguments that include the argument in question
         subsets = self.subsets_containing_target()
         for subset in subsets:
-            if argument in subset and self.is_conflict_free(subset):
+            if self.argument in subset and self.is_conflict_free(subset):
                 if all(self.defends(subset, arg) for arg in subset):
                     print(f"'{self.argument}' is credulously acceptable under Admissible Semantics.")
                     return True
@@ -69,7 +70,11 @@ class ArgumentationFramework:
         # Convert the list of tuples into a set
         return set(subsets)
 
-path = os.path.join(os.getcwd(), "Argumentation_Framework_tests/AF_test_3.json")
-argument = "D"
 
-af = ArgumentationFramework(path, argument)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("data_file", type=str, help="The path to the data file.")
+    parser.add_argument("argument", type=str, help="The claimed argument.")
+    args = parser.parse_args()
+
+    ArgumentationFramework(args.data_file, args.argument)
