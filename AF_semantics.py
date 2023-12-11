@@ -8,8 +8,14 @@ class ArgumentationFramework:
     def __init__(self, data_file, argument):
         data = self.load_data(data_file)
         self.argument = argument
-        self.arguments = list(data["Arguments"].keys())
-        self.attacks = tuple(tuple(pair) for pair in data["Attack Relations"])
+        self.arguments = set(data["Arguments"].keys())
+        self.attacks = {tuple(pair) for pair in data["Attack Relations"]}
+    
+    def compute(self):
+        # First ensure that the target is in the set
+        if self.argument not in self.arguments:
+            print('The provided argument does not appear in the AF.')
+            return exit(0)
         fast_check = self.fast_check()
         if not fast_check:
             print(f"'{self.argument}' has no attackers, this argument is credulously acceptable under Admissible Semantics.")
@@ -22,25 +28,30 @@ class ArgumentationFramework:
             data = json.load(f)
         return data
 
-    # Check the argument itself before computing the subsets.
+    # Function to check the argument itself and optimize computation.
     def fast_check(self):
         is_attacked = False
         for relation in self.attacks:
-            if relation[0] == relation[1] and relation[1] == self.argument:
+            if relation[0] == relation[1] and relation[1] == self.argument:  # Check loop to itself
                 print(f"'{self.argument}' attacks itself, this argument is NOT credulously acceptable under Admissible Semantics.")
                 return exit(0)
+            elif relation[0] == relation[1]: # Check for loop
+                self.arguments.discard(relation[0]) # Delete because it canot defend
+                
             elif relation[1] == self.argument:
                 is_attacked = True
+                self.arguments.discard(relation[0]) # Delete because it attacks the argument
+
         return is_attacked
 
     # Function to check if an argument is credulously accepted under admissible semantics
     def is_credulously_accepted(self):
-        # Generate all possible subsets of arguments that include the argument in question
         subsets = self.subsets_containing_target()
         for subset in subsets:
-            if self.argument in subset and self.is_conflict_free(subset):
+            if self.is_conflict_free(subset):
                 if all(self.defends(subset, arg) for arg in subset):
                     print(f"'{self.argument}' is credulously acceptable under Admissible Semantics.")
+                    print(subset)
                     return True
         print(f"'{self.argument}' is NOT credulously acceptable under Admissible Semantics.")
         return False
@@ -53,22 +64,15 @@ class ArgumentationFramework:
     def defends(self, s, argument):
         attackers = {attacker for attacker, target in self.attacks if target == argument}
         return all(any((defender, attacker) in self.attacks for defender in s) for attacker in attackers)
-
+    
+    # Function to generate all possible subsets with the given argument
     def subsets_containing_target(self):
-        # First ensure that the target is in the set
-        if self.argument not in self.arguments:
-            print('The provided argument does not appear in the AF.')
-            return exit(0)
-        # Remove the target from the set temporarily to generate combinations of other elements
-        self.arguments.remove(self.argument)
-        # Use a list to accumulate subsets
-        subsets = [tuple([self.argument])]
-        # Generate all possible combinations of the remaining elements
+        self.arguments.discard(self.argument)
+        subsets = {tuple([self.argument])}
         for i in range(1, len(self.arguments) + 1):
-            for combo in combinations(self.arguments, i):
-                subsets.append(tuple([self.argument]) + combo)
-        # Convert the list of tuples into a set
-        return set(subsets)
+            for combo in combinations(self.arguments - {self.argument}, i):
+                subsets.add(tuple([self.argument]) + combo)
+        return subsets
 
 
 if __name__ == "__main__":
@@ -77,4 +81,4 @@ if __name__ == "__main__":
     parser.add_argument("argument", type=str, help="The claimed argument.")
     args = parser.parse_args()
 
-    ArgumentationFramework(args.data_file, args.argument)
+    ArgumentationFramework(args.data_file, args.argument).compute()
