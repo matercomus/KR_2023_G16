@@ -62,15 +62,15 @@ class Game:
             self.G, pos, edge_color="black", arrowstyle="->", arrowsize=20
         )
         nx.draw_networkx_labels(self.G, pos, font_size=12)
-        argument_text = {k: f"{v}" for k, v in self.data["Arguments"].items()}
-        pos_higher = {k: (v[0], v[1] + 0.04) for k, v in pos.items()}
-        nx.draw_networkx_labels(
-            self.G,
-            pos_higher,
-            labels=argument_text,
-            horizontalalignment="center",
-            font_size=8,
-        )
+        # argument_text = {k: f"{v}" for k, v in self.data["Arguments"].items()}
+        # pos_higher = {k: (v[0], v[1] + 0.04) for k, v in pos.items()}
+        # nx.draw_networkx_labels(
+        #     self.G,
+        #     pos_higher,
+        #     labels=argument_text,
+        #     horizontalalignment="center",
+        #     font_size=8,
+        # )
 
         if self.add_game_text:
             plt.text(
@@ -133,14 +133,15 @@ class Game:
 
     def choose_proponent_move(self, options):
         best_argument = None
-        best_path_length = float('inf')
+        best_path_length = float("inf")
 
         def dfs(argument, path, visited_proponent, visited_opponent):
             nonlocal best_argument, best_path_length
 
             # Losing conditions
-            if (argument in visited_opponent
-                or argument in self.G.predecessors(argument)):
+            if argument in visited_opponent or argument in self.G.predecessors(
+                argument
+            ):
                 return False
 
             # Find best path
@@ -164,7 +165,9 @@ class Game:
         for argument in options:
             dfs(argument, [argument], {argument}, set(self.opponent_arguments))
 
-        return best_argument if best_argument else options[0]  # Fallback to the first option if no winning path is found
+        return (
+            best_argument if best_argument else options[0]
+        )  # Fallback to the first option if no winning path is found
 
     def proponent_turn(self):
         options = (
@@ -197,6 +200,8 @@ class Game:
         if not options:
             print("Opponent has no choices left. Proponent wins!")
             self.winner = "Proponent"
+            self.game_text += f"Step({self.step}) Proponent: {self.data['Arguments'][self.proponent_arguments[-1]]}\n"
+            self.draw_graph()
             return False
 
         argument = (
@@ -205,8 +210,12 @@ class Game:
             else self.get_user_choice(options)
         )
         if argument in self.proponent_arguments:
-            print("The opponent used an argument previously used by the proponent (contradiction). Opponent wins!")
+            print(
+                "The opponent used an argument previously used by the proponent (contradiction). Opponent wins!"
+            )
             self.winner = "Opponent"
+            self.game_text += f"Step({self.step}) Opponent: {self.data['Arguments'][self.opponent_arguments[-1]]}\n"
+            self.draw_graph()
             return False
 
         self.opponent_arguments.append(argument)
@@ -226,7 +235,9 @@ class Game:
                     return options[choice]
             except ValueError:
                 pass
-            print("Invalid input. Please enter a number corresponding to one of the options.")
+            print(
+                "Invalid input. Please enter a number corresponding to one of the options."
+            )
 
     def play(self):
         while True:
@@ -249,8 +260,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Play the argumentation game.")
     parser.add_argument("data_file", type=str, help="The path to the data file.")
     parser.add_argument("claimed_argument", type=str, help="The claimed argument.")
-    parser.add_argument("--verbose", action="store_true", help="If set, print verbose output.")
-    parser.add_argument("--show_graph", action="store_true", help="If set, show the graph.")
+    parser.add_argument(
+        "--verbose", action="store_true", help="If set, print verbose output."
+    )
+    parser.add_argument(
+        "--show_graph", action="store_true", help="If set, show the graph."
+    )
     parser.add_argument(
         "--save_graph",
         nargs="?",
@@ -279,6 +294,6 @@ if __name__ == "__main__":
         args.show_graph,
         args.save_graph,
         args.save_res,
-        args.add_game_text
+        args.add_game_text,
     )
     game.play()
